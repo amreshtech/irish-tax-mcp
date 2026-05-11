@@ -1,13 +1,27 @@
-import { calculateIncomeTax, calculateVat, calculateCgt } from '@irish-tax-mcp/core';
-import type { TaxCreditKey } from '@irish-tax-mcp/core';
+import {
+  calculateAnnualPersonalTax,
+  calculateCat,
+  calculateCgt,
+  calculateIncomeTax,
+  calculateStampDuty,
+  calculateVat,
+} from '@irish-tax-mcp/core';
 import { getRates, getTopicReference } from '@irish-tax-mcp/reference';
-import type { ReferenceTopics } from '@irish-tax-mcp/reference';
 import { TOOL_LIST } from './tools.js';
+import {
+  parseCalculateAnnualPersonalTax,
+  parseCalculateCat,
+  parseCalculateCgt,
+  parseCalculateIncomeTax,
+  parseCalculateStampDuty,
+  parseCalculateVat,
+  parseReferenceLookup,
+} from './validation.js';
 
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...corsHeaders() },
   });
 }
 
@@ -26,18 +40,11 @@ function mcpError(code: string, message: string, status = 400): Response {
   });
 }
 
-function handleToolCall(name: string, input: Record<string, unknown>): unknown {
-  const year = typeof input['year'] === 'number' ? input['year'] : 2025;
-  const rates = getRates(year);
-
+function handleToolCall(name: string, input: unknown): unknown {
   switch (name) {
     case 'calculate_income_tax': {
-      const params = {
-        grossIncomeCents: input['grossIncomeCents'] as number,
-        filingStatus: input['filingStatus'] as 'single' | 'married_one_income' | 'married_two_incomes' | 'widowed',
-        creditKeys: input['creditKeys'] as TaxCreditKey[],
-        prsiClass: input['prsiClass'] as 'A' | 'S' | 'D',
-      };
+      const { year, params } = parseCalculateIncomeTax(input);
+      const rates = getRates(year);
       const result = calculateIncomeTax(params, rates);
       return {
         ...result,
@@ -47,17 +54,31 @@ function handleToolCall(name: string, input: Record<string, unknown>): unknown {
         uscEur: result.uscCents / 100,
         prsiEur: result.prsiCents / 100,
         totalDeductionsEur: result.totalDeductionsCents / 100,
-        effectiveRate: result.totalDeductionsCents / result.grossIncomeCents,
+        effectiveRate: result.grossIncomeCents === 0 ? 0 : result.totalDeductionsCents / result.grossIncomeCents,
+        year,
+      };
+    }
+
+    case 'calculate_annual_personal_tax': {
+      const { year, params } = parseCalculateAnnualPersonalTax(input);
+      const rates = getRates(year);
+      const result = calculateAnnualPersonalTax(params, rates);
+      return {
+        ...result,
+        totalGrossIncomeEur: result.totalGrossIncomeCents / 100,
+        grossIncomeTaxEur: result.grossIncomeTaxCents / 100,
+        incomeTaxEur: result.incomeTaxCents / 100,
+        uscEur: result.uscCents / 100,
+        prsiEur: result.prsiCents / 100,
+        totalDeductionsEur: result.totalDeductionsCents / 100,
+        netIncomeEur: result.netIncomeCents / 100,
         year,
       };
     }
 
     case 'calculate_vat': {
-      const params = {
-        amountCents: input['amountCents'] as number,
-        vatCode: input['vatCode'] as 'A' | 'B' | 'C' | 'D',
-        direction: input['direction'] as 'exclusive' | 'inclusive',
-      };
+      const { year, params } = parseCalculateVat(input);
+      const rates = getRates(year);
       const result = calculateVat(params, rates);
       return {
         ...result,
@@ -70,7 +91,8 @@ function handleToolCall(name: string, input: Record<string, unknown>): unknown {
     }
 
     case 'calculate_cgt': {
-      const params = { gainCents: input['gainCents'] as number };
+      const { year, params } = parseCalculateCgt(input);
+      const rates = getRates(year);
       const result = calculateCgt(params, rates);
       return {
         ...result,
@@ -83,8 +105,37 @@ function handleToolCall(name: string, input: Record<string, unknown>): unknown {
       };
     }
 
+    case 'calculate_stamp_duty': {
+      const { year, params } = parseCalculateStampDuty(input);
+      const rates = getRates(year);
+      const result = calculateStampDuty(params, rates);
+      return {
+        ...result,
+        considerationEur: result.considerationCents / 100,
+        dutyDueEur: result.dutyDueCents / 100,
+        effectiveRatePercent: `${(result.effectiveRate * 100).toFixed(3)}%`,
+        year,
+      };
+    }
+
+    case 'calculate_cat': {
+      const { year, params } = parseCalculateCat(input);
+      const rates = getRates(year);
+      const result = calculateCat(params, rates);
+      return {
+        ...result,
+        benefitEur: result.benefitCents / 100,
+        thresholdEur: result.thresholdCents / 100,
+        taxableAmountEur: result.taxableAmountCents / 100,
+        catDueEur: result.catDueCents / 100,
+        remainingThresholdEur: result.remainingThresholdCents / 100,
+        ratePercent: `${result.rate * 100}%`,
+        year,
+      };
+    }
+
     case 'tax_reference_lookup': {
-      const topic = input['topic'] as ReferenceTopics;
+      const { topic, year } = parseReferenceLookup(input);
       return getTopicReference(topic, year);
     }
 
@@ -102,17 +153,11 @@ export default {
     }
 
     if (url.pathname === '/health') {
-      return new Response(
-        JSON.stringify({ status: 'ok', service: 'irish-tax-mcp', version: '1.0.0' }),
-        { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders() } },
-      );
+      return json({ status: 'ok', service: 'irish-tax-mcp', version: '1.0.0' });
     }
 
     if (url.pathname === '/tools/list' && request.method === 'GET') {
-      return new Response(JSON.stringify({ tools: TOOL_LIST }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders() },
-      });
+      return json({ tools: TOOL_LIST });
     }
 
     if (url.pathname === '/tools/call' && request.method === 'POST') {
@@ -127,12 +172,9 @@ export default {
       if (typeof name !== 'string') {
         return mcpError('invalid_request', 'Missing or invalid "name" field');
       }
-      if (typeof input !== 'object' || input === null || Array.isArray(input)) {
-        return mcpError('invalid_request', 'Missing or invalid "input" field — must be an object');
-      }
 
       try {
-        const result = handleToolCall(name, input as Record<string, unknown>);
+        const result = handleToolCall(name, input);
         return json({ content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] });
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);

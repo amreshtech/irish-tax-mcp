@@ -46,6 +46,66 @@ export const TOOL_LIST = [
     },
   },
   {
+    name: 'calculate_annual_personal_tax',
+    description:
+      'Calculate annual Irish personal tax across multiple income sources, aggregating income tax and USC while computing PRSI per source. All monetary amounts are in euro cents.',
+    inputSchema: {
+      type: 'object',
+      required: ['filingStatus', 'creditKeys', 'incomeSources'],
+      properties: {
+        year: {
+          type: 'integer',
+          description: 'Tax year. Defaults to 2025.',
+          default: 2025,
+        },
+        filingStatus: {
+          type: 'string',
+          enum: ['single', 'married_one_income', 'married_two_incomes', 'widowed'],
+          description: 'Filing status for standard-rate cut-off point selection.',
+        },
+        creditKeys: {
+          type: 'array',
+          items: {
+            type: 'string',
+            enum: [
+              'personal_single',
+              'personal_married',
+              'paye',
+              'earned_income',
+              'home_carer',
+              'single_person_child_carer',
+            ],
+          },
+          description: 'Tax credit keys to apply at the annual taxpayer level.',
+        },
+        incomeSources: {
+          type: 'array',
+          items: {
+            type: 'object',
+            required: ['kind', 'grossIncomeCents'],
+            properties: {
+              kind: {
+                type: 'string',
+                enum: ['employment', 'self_employment', 'pension', 'other'],
+                description: 'Income source category.',
+              },
+              grossIncomeCents: {
+                type: 'integer',
+                description: 'Gross annual income for this source in euro cents.',
+              },
+              prsiClass: {
+                type: 'string',
+                enum: ['A', 'S', 'D'],
+                description: 'Optional explicit PRSI class override for this source.',
+              },
+            },
+          },
+          description: 'Income sources to aggregate into one annual personal-tax computation.',
+        },
+      },
+    },
+  },
+  {
     name: 'calculate_vat',
     description:
       'Calculate Irish VAT for a given amount and VAT code, either adding VAT to a net amount (exclusive) or extracting it from a gross amount (inclusive).',
@@ -90,6 +150,57 @@ export const TOOL_LIST = [
     },
   },
   {
+    name: 'calculate_stamp_duty',
+    description:
+      'Calculate Irish stamp duty for a standard residential property, non-residential property, or share transfer. All monetary amounts are in euro cents.',
+    inputSchema: {
+      type: 'object',
+      required: ['considerationCents', 'propertyType'],
+      properties: {
+        year: { type: 'integer', description: 'Tax year. Defaults to 2025.', default: 2025 },
+        considerationCents: {
+          type: 'integer',
+          description: 'Consideration in euro cents.',
+        },
+        propertyType: {
+          type: 'string',
+          enum: ['residential', 'non_residential', 'shares'],
+          description:
+            'Transaction type: residential property, non-residential property, or share transfer.',
+        },
+      },
+    },
+  },
+  {
+    name: 'calculate_cat',
+    description:
+      'Calculate Irish Capital Acquisitions Tax (CAT) for a gift or inheritance using a group threshold, prior taxable benefits, and optional small gift exemption. All monetary amounts are in euro cents.',
+    inputSchema: {
+      type: 'object',
+      required: ['benefitCents', 'group'],
+      properties: {
+        year: { type: 'integer', description: 'Tax year. Defaults to 2025.', default: 2025 },
+        benefitCents: {
+          type: 'integer',
+          description: 'Taxable value of the current gift or inheritance in euro cents before CAT thresholding.',
+        },
+        group: {
+          type: 'string',
+          enum: ['A', 'B', 'C'],
+          description: 'CAT threshold group.',
+        },
+        priorTaxableBenefitsCents: {
+          type: 'integer',
+          description: 'Prior taxable benefits already aggregated against the same group threshold.',
+        },
+        applySmallGiftExemption: {
+          type: 'boolean',
+          description: 'Whether to apply the annual €3,000 small gift exemption. Use only for gifts, not inheritances.',
+        },
+      },
+    },
+  },
+  {
     name: 'tax_reference_lookup',
     description:
       'Look up Irish tax reference data (rates, thresholds, credits) for a given topic and year.',
@@ -100,7 +211,7 @@ export const TOOL_LIST = [
         year: { type: 'integer', description: 'Tax year. Defaults to 2025.', default: 2025 },
         topic: {
           type: 'string',
-          enum: ['income_tax', 'usc', 'prsi', 'tax_credits', 'cgt', 'vat', 'stamp_duty'],
+          enum: ['income_tax', 'usc', 'prsi', 'tax_credits', 'cgt', 'vat', 'stamp_duty', 'cat'],
           description: 'The tax topic to retrieve reference data for.',
         },
       },

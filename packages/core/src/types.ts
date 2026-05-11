@@ -10,6 +10,16 @@ export type VatCode = 'A' | 'B' | 'C' | 'D';
 
 export type VatDirection = 'exclusive' | 'inclusive';
 
+export type StampDutyPropertyType = 'residential' | 'non_residential' | 'shares';
+
+export type CatGroup = 'A' | 'B' | 'C';
+
+export type PersonalTaxIncomeSourceKind =
+  | 'employment'
+  | 'self_employment'
+  | 'pension'
+  | 'other';
+
 export type TaxCreditKey =
   | 'personal_single'
   | 'personal_married'
@@ -49,6 +59,18 @@ export interface VatRates {
   descriptions: Record<VatCode, string>;
 }
 
+export interface StampDutyRates {
+  residential: TaxBand[];
+  nonResidential: number;
+  shares: number;
+}
+
+export interface CatRates {
+  rate: number;
+  thresholdsCents: Record<CatGroup, number>;
+  smallGiftExemptionCents: number;
+}
+
 export interface TaxRates {
   year: number;
   incomeTax: IncomeTaxRates;
@@ -57,6 +79,8 @@ export interface TaxRates {
   taxCreditsCents: Record<TaxCreditKey, number>;
   cgt: CgtRates;
   vat: VatRates;
+  stampDuty: StampDutyRates;
+  cat: CatRates;
 }
 
 export interface IncomeTaxParams {
@@ -101,4 +125,63 @@ export interface CgtResult {
   taxableGainCents: number;
   cgtDueCents: number;
   rate: number;
+}
+
+export interface StampDutyParams {
+  considerationCents: number;
+  propertyType: StampDutyPropertyType;
+}
+
+export interface StampDutyResult {
+  considerationCents: number;
+  propertyType: StampDutyPropertyType;
+  dutyDueCents: number;
+  effectiveRate: number;
+}
+
+export interface CatParams {
+  benefitCents: number;
+  group: CatGroup;
+  priorTaxableBenefitsCents?: number;
+  applySmallGiftExemption?: boolean;
+}
+
+export interface CatResult {
+  benefitCents: number;
+  group: CatGroup;
+  priorTaxableBenefitsCents: number;
+  thresholdCents: number;
+  smallGiftExemptionAppliedCents: number;
+  taxableBenefitAfterExemptionCents: number;
+  thresholdConsumedCents: number;
+  remainingThresholdCents: number;
+  taxableAmountCents: number;
+  catDueCents: number;
+  rate: number;
+}
+
+export interface AnnualPersonalTaxIncomeSource {
+  kind: PersonalTaxIncomeSourceKind;
+  grossIncomeCents: number;
+  prsiClass?: PrsiClass;
+}
+
+export interface AnnualPersonalTaxParams {
+  filingStatus: FilingStatus;
+  creditKeys: TaxCreditKey[];
+  incomeSources: AnnualPersonalTaxIncomeSource[];
+}
+
+export interface AnnualPersonalTaxResult {
+  filingStatus: FilingStatus;
+  totalGrossIncomeCents: number;
+  sourceTotalsCents: Record<PersonalTaxIncomeSourceKind, number>;
+  grossIncomeTaxCents: number;
+  totalCreditsCents: number;
+  incomeTaxCents: number;
+  uscCents: number;
+  prsiByClassCents: Record<PrsiClass, number>;
+  prsiCents: number;
+  totalDeductionsCents: number;
+  netIncomeCents: number;
 }
