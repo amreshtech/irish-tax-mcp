@@ -1,0 +1,84 @@
+{
+  "_source": "Revenue Commissioners Ireland — Budget 2025 (announced Oct 2024, effective 1 Jan 2025)",
+  "_updated": "2025-01-01",
+  "year": 2025,
+  "incomeTax": {
+    "_note": "Standard rate cut-off points raised in Budget 2025",
+    "rates": {
+      "standard": 0.20,
+      "higher": 0.40
+    },
+    "cutOffPointsCents": {
+      "single": 4400000,
+      "married_one_income": 5300000,
+      "married_two_incomes": 8800000,
+      "widowed": 4400000
+    }
+  },
+  "usc": {
+    "_note": "USC — Universal Social Charge. Exempt if total income ≤ €13,000",
+    "exemptionThresholdCents": 1300000,
+    "bands": [
+      { "widthCents": 1201200, "rate": 0.005, "_label": "0.5% on first €12,012" },
+      { "widthCents": 1374800, "rate": 0.02,  "_label": "2% on next €13,748 (to €25,760)" },
+      { "widthCents": 4428400, "rate": 0.03,  "_label": "3% on next €44,284 (to €70,044)" },
+      { "widthCents": null,    "rate": 0.08,  "_label": "8% on balance above €70,044" }
+    ]
+  },
+  "prsi": {
+    "_note": "PRSI rate increased by 0.1% from 1 Oct 2024, so 4.1% applies for full 2025 tax year",
+    "classA": {
+      "_label": "Employed — standard",
+      "weeklyExemptionCents": 35200,
+      "rate": 0.041
+    },
+    "classS": {
+      "_label": "Self-employed",
+      "incomeThresholdCents": 500000,
+      "minimumAnnualCents": 50000,
+      "rate": 0.041
+    },
+    "classD": {
+      "_label": "Public servant (pre-1995 entrant)",
+      "rate": 0.009
+    }
+  },
+  "taxCreditsCents": {
+    "_note": "Tax credits reduce income tax payable. They do not reduce USC or PRSI.",
+    "personal_single": 187500,
+    "personal_married": 375000,
+    "paye": 187500,
+    "earned_income": 187500,
+    "home_carer": 180000,
+    "single_person_child_carer": 175000
+  },
+  "cgt": {
+    "_note": "Capital Gains Tax. Annual personal exemption is per individual, not per disposal.",
+    "rate": 0.33,
+    "annualExemptionCents": 127000
+  },
+  "vat": {
+    "_note": "Irish VAT rates as of 2025. Code follows Revenue designation.",
+    "rates": {
+      "A": 0.23,
+      "B": 0.135,
+      "C": 0.09,
+      "D": 0.00
+    },
+    "descriptions": {
+      "A": "Standard rate (23%) — most goods and services",
+      "B": "Reduced rate (13.5%) — fuel, building services, hospitality, tourism",
+      "C": "Second reduced rate (9%) — newspapers, e-publications, periodicals",
+      "D": "Zero rate (0%) — food, children's clothing, oral medicines, books, exports"
+    }
+  },
+  "stampDuty": {
+    "_note": "Residential stamp duty rates 2025. Non-residential: 7.5%. Shares: 1%.",
+    "residential": [
+      { "widthCents": 100000000, "rate": 0.01, "_label": "1% on first €1,000,000" },
+      { "widthCents": null,      "rate": 0.02, "_label": "2% on excess above €1,000,000" }
+    ],
+    "nonResidential": 0.075,
+    "shares": 0.01
+  }
+}
